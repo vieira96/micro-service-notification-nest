@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+generated
+logs
+.git
+.idea
+.vscode

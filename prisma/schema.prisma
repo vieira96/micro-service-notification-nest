@@ -1,0 +1,13 @@
+// Arquivo principal do schema (Prisma 7, multi-file).
+// Contém SÓ generator + datasource — os models ficam em prisma/models/*.prisma,
+// um arquivo por módulo. Relações cruzam arquivos sem imports.
+// A URL de conexão fica em prisma.config.ts via env DATABASE_URL.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -1,0 +1,92 @@
+name: notification-api
+
+services:
+  postgres:
+    image: postgres:16.3
+    container_name: notification-api-postgres
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-../.env}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - notifications_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: notification-api-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: notification-api-api
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-../.env}
+    ports:
+      - "${PORT:-8001}:${PORT:-8001}"
+    networks:
+      - default
+      - messaging
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ../src
+          target: /app/src
+        - action: rebuild
+          path: ../package.json
+        - action: rebuild
+          path: ../prisma/schema.prisma
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: notification-api-rabbitmq
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-../.env}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-notifications}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-notifications}
+    ports:
+      - "5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - notifications_rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - default
+      - messaging
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-s", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  notifications_postgres_data:
+  notifications_rabbitmq_data:
+
+networks:
+  messaging:
+    name: library-messaging
+    external: true

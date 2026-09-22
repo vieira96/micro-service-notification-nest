@@ -1,0 +1,20 @@
+# dependencies
+node_modules
+generated/prisma
+
+# build
+dist
+coverage
+
+# env (mantido fora do versionamento, ver .env.example)
+.env
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# ide / os
+.idea
+.vscode
+.DS_Store
