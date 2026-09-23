@@ -45,8 +45,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Returns a notification list', () => pm.expect(pm.response.json()).to.be.an('array'));",
-                  "const first = pm.response.json()[0];",
+                  "pm.test('Returns a page', () => { const body = pm.response.json(); pm.expect(body).to.have.property('content'); pm.expect(body.content).to.be.an('array'); });",
+                  "const first = pm.response.json().content[0];",
+                  "pm.test('Item has read state', () => { if (first) pm.expect(first).to.have.property('read'); });",
                   "if (first) pm.collectionVariables.set('notificationId', first.id);"
                 ]
               }
@@ -54,8 +55,8 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{notificationApiUrl}}/notifications",
-            "description": "Lista notificações globais e as do usuário presente no sub do JWT."
+            "url": "{{notificationApiUrl}}/notifications?page=1&size=10",
+            "description": "Lista paginada (page, size) com o estado de leitura (read/readAt) do usuário presente no sub do JWT."
           }
         },
         {
@@ -74,7 +75,7 @@
           "request": {
             "method": "PATCH",
             "url": "{{notificationApiUrl}}/notifications/read-all",
-            "description": "Marca como lidas apenas as notificações acessíveis ao usuário do JWT."
+            "description": "Marca todas as notificações como lidas para o usuário do JWT."
           }
         },
         {

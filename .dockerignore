@@ -1,7 +1,8 @@
 node_modules
 dist
 coverage
-generated
+src/generated
+*.tsbuildinfo
 logs
 .git
 .idea

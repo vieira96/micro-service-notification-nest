@@ -1,5 +1,6 @@
-// Domínio do módulo de notificações (microservice de realtime).
-// Relações podem cruzar arquivos sem imports — o Prisma combina tudo no generate/migrate.
+// Domínio do módulo de notificações.
+// Notification é única e sem dono (sem userId).
+// O estado por usuário (leu/não leu) vive em notification-read.prisma.
 
 enum NotificationChannel {
   IN_APP
@@ -8,29 +9,18 @@ enum NotificationChannel {
   SMS
 }
 
-enum NotificationStatus {
-  PENDING
-  SENT
-  DELIVERED
-  READ
-  FAILED
-}
-
 model Notification {
   id        String              @id @default(uuid())
-  // Opcional: null = broadcast para todos os usuários (ex.: "novo livro no catálogo").
-  userId    String?             @map("user_id")
   type      String              @db.VarChar(50)
   title     String              @db.VarChar(200)
   message   String              @db.Text
   data      Json?
   channel   NotificationChannel @default(IN_APP)
-  status    NotificationStatus  @default(PENDING)
-  readAt    DateTime?           @map("read_at")
   createdAt DateTime            @default(now()) @map("created_at")
   updatedAt DateTime            @updatedAt @map("updated_at")
 
-  @@index([userId, status])
-  @@index([userId, createdAt(sort: Desc)])
+  reads NotificationRead[]
+
+  @@index([createdAt(sort: Desc)])
   @@map("notifications")
 }

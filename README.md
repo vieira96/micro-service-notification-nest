@@ -1,12 +1,12 @@
 # Notification API
 
-Microsserviço de notificações da livraria, feito em NestJS. Ele consome os eventos publicados pela API Java, persiste uma notificação por usuário no PostgreSQL e expõe a leitura via HTTP para o sino do front.
+Microsserviço de notificações da livraria, feito em NestJS. Ele consome os eventos publicados pela API Java, persiste cada notificação uma única vez no PostgreSQL, guarda o estado de leitura por usuário em tabela separada e expõe a leitura via HTTP para o sino do front.
 
 API Java: [https://github.com/vieira96/api-livraria-java-spring-boot](https://github.com/vieira96/api-livraria-java-spring-boot)
 
 ## Como funciona
 
-Ao criar um livro na API Java, ela publica o evento `book.created` no RabbitMQ com o id, o título e os destinatários em lotes de 100. Este serviço consome a fila `notifications.book-created` e grava uma linha por usuário com `createMany`. O tempo real (WebSocket) ainda não existe — por enquanto, o front consulta por polling nos endpoints abaixo.
+Ao criar um livro na API Java, ela publica o evento `book.created` no RabbitMQ com o id e o título. Este serviço consome a fila `notifications.book-created` e grava uma única linha em `notifications`; quando um usuário lê, uma linha é gravada em `notification_reads`. O tempo real (WebSocket) ainda não existe — por enquanto, o front consulta por polling nos endpoints abaixo.
 
 O produtor precisa enviar o envelope `{"pattern": "book.created", "data": {...}}`; sem o `pattern`, o Nest não roteia a mensagem para o handler. Detalhe documentado no código em `src/notifications/notifications.controller.ts`.
 
@@ -63,21 +63,26 @@ Dentro do Docker, os hosts são `postgres`, `redis` e `rabbitmq`. Fora do Docker
 
 ## Endpoints
 
+A leitura exige o access token da API Java (`Authorization: Bearer`); o usuário é identificado pelo `sub` do JWT, sem `userId` na URL.
+
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| `GET` | `/notifications` | Lista notificações, mais recentes primeiro. Aceita `?userId=` para trazer as direcionadas ao usuário mais as globais |
-| `PATCH` | `/notifications/read-all` | Marca todas como lidas. Aceita `?userId=` |
-| `PATCH` | `/notifications/:id/read` | Marca uma como lida |
+| `GET` | `/notifications` | Lista paginada, mais recentes primeiro, com `read`/`readAt` do usuário logado. Aceita `?page=` (padrão 1) e `?size=` (padrão 10, máximo 100) |
+| `PATCH` | `/notifications/read-all` | Marca todas como lidas para o usuário logado |
+| `PATCH` | `/notifications/:id/read` | Marca uma como lida para o usuário logado |
 
 Exemplo:
 
 ```http
-GET /notifications?userId=5d6a189f-3549-42c6-a02e-d4185faefeea
+GET /notifications?page=1&size=10
+Authorization: Bearer JWT_DE_ACESSO
 ```
+
+A resposta segue o formato `{ content, page, size, totalElements, totalPages, hasNext }`, igual ao da API Java. Os DTOs de paginação ficam em `src/common/dto/` e são reutilizáveis por outros módulos.
 
 ## Prisma
 
-O schema é multi-arquivo: `prisma/schema.prisma` tem só `generator` + `datasource`, e cada módulo ganha um `.prisma` em `prisma/models/`. O `prisma.config.ts` aponta para o diretório (apontar para o arquivo faria os models sumirem silenciosamente).
+O schema é multi-arquivo: `prisma/schema.prisma` tem só `generator` + `datasource`, e cada model ganha um `.prisma` em `prisma/models/`. O `prisma.config.ts` aponta para o diretório (apontar para o arquivo faria os models sumirem silenciosamente).
 
 Para criar uma migration após alterar o schema:
 
@@ -85,12 +90,12 @@ Para criar uma migration após alterar o schema:
 DATABASE_URL="postgresql://notifications:notifications@localhost:5433/notifications?schema=public" npx prisma migrate dev --name nome-da-migration
 ```
 
+Se a mudança derruba coluna com dados, o `migrate dev` exige terminal interativo; nesse caso gere o SQL à mão em `prisma/migrations/<timestamp>_<nome>/migration.sql` e aplique com `npx prisma migrate deploy`.
+
 No Prisma 7, o `PrismaClient` exige driver adapter explícito (ver `src/prisma/prisma.service.ts`), e campo opcional no `where` usa `{ equals: null }`.
 
 ## Próximos passos
 
-1. **Testes** — sim, precisa: teste do `NotificationsService` (Prisma mockado) cobrindo `createMany` por lote, leitura e marcação como lida, mais teste do controller HTTP. O consumer RMQ entra com o service mockado.
-2. **Tempo real** via WebSocket (gateway + adapter Redis para escalar horizontalmente).
-3. Ligar o sino do front nestes endpoints (hoje ele usa mocks).
-4. Filtro de opt-in na busca de destinatários (hoje traz todos os usuários).
-5. DLQ e idempotência no consumo da fila.
+1. **Opt-in em tempo real** — preferência já mora aqui (`notification_preferences`, `GET/PATCH /preferences/me`); falta o gateway só emitir para conexões de usuários opt-in.
+2. Ligar o sino do front nestes endpoints (hoje ele usa mocks).
+3. DLQ e idempotência no consumo da fila.
