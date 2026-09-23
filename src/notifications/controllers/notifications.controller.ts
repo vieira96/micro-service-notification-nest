@@ -36,6 +36,12 @@ export class NotificationsController {
     return this.notificationsService.findAll(request.user.id, query);
   }
 
+  @Get('unread-count')
+  @UseGuards(JwtAuthGuard)
+  countUnread(@Req() request: AuthenticatedRequest) {
+    return this.notificationsService.countUnread(request.user.id);
+  }
+
   @Patch('read-all')
   @UseGuards(JwtAuthGuard)
   markAllAsRead(@Req() request: AuthenticatedRequest) {

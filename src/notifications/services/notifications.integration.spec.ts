@@ -38,6 +38,8 @@ describe('NotificationsService (integration)', () => {
     const created = await service.createFromBookCreated({
       bookId: 'book-1',
       title: 'Dom Casmurro',
+      url: '/admin/books',
+      external: false,
     });
 
     const before = await service.findAll('user-1', { page: 1, size: 10 });
@@ -56,6 +58,8 @@ describe('NotificationsService (integration)', () => {
     await service.createFromBookCreated({
       bookId: 'book-2',
       title: 'Memórias Póstumas',
+      url: null,
+      external: false,
     });
 
     const result = await service.markAllAsRead('user-2');

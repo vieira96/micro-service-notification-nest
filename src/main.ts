@@ -8,6 +8,10 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
+  app.enableCors({
+    origin: (process.env.FRONTEND_URL ?? 'http://localhost:4200').split(','),
+  });
+
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {

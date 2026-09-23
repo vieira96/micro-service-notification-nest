@@ -18,7 +18,12 @@ describe('NotificationsService', () => {
     };
   };
 
-  const payload = { bookId: 'book-1', title: 'Dom Casmurro' };
+  const payload = {
+    bookId: 'book-1',
+    title: 'Dom Casmurro',
+    url: '/admin/books',
+    external: false,
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -58,6 +63,8 @@ describe('NotificationsService', () => {
           message: 'O livro "Dom Casmurro" foi adicionado ao catálogo.',
           data: { bookId: 'book-1' },
           channel: 'IN_APP',
+          url: '/admin/books',
+          external: false,
         },
       });
       expect(result).toBe(created);
@@ -147,6 +154,19 @@ describe('NotificationsService', () => {
         skipDuplicates: true,
       });
       expect(result).toEqual({ count: 2 });
+    });
+  });
+
+  describe('countUnread', () => {
+    it('conta notificações sem leitura do usuário', async () => {
+      prisma.notification.count.mockResolvedValue(3);
+
+      const result = await service.countUnread('user-1');
+
+      expect(prisma.notification.count).toHaveBeenCalledWith({
+        where: { reads: { none: { userId: 'user-1' } } },
+      });
+      expect(result).toEqual({ count: 3 });
     });
   });
 });

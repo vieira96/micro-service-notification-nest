@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { CountResponseDto } from '@/common/dto/count-response.dto';
 import { PageQueryDto } from '@/common/dto/page-query.dto';
 import { PageResponseDto } from '@/common/dto/page-response.dto';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -21,6 +22,8 @@ export class NotificationsService {
         message: `O livro "${payload.title}" foi adicionado ao catálogo.`,
         data: { bookId: payload.bookId },
         channel: 'IN_APP',
+        url: payload.url,
+        external: payload.external ?? false,
       },
     });
     this.logger.log(`Notificação persistida: id=${notification.id}`);
@@ -50,6 +53,13 @@ export class NotificationsService {
       ),
     );
     return PageResponseDto.from(content, totalElements, page, size);
+  }
+
+  async countUnread(userId: string): Promise<CountResponseDto> {
+    const count = await this.prisma.notification.count({
+      where: { reads: { none: { userId } } },
+    });
+    return CountResponseDto.fromCount(count);
   }
 
   async markAsRead(

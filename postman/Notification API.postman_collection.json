@@ -60,6 +60,26 @@
           }
         },
         {
+          "name": "Unread count",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns a count', () => pm.expect(pm.response.json()).to.have.property('count'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{notificationApiUrl}}/notifications/unread-count",
+            "description": "Quantidade de não lidas do usuário do JWT. O sino consome este endpoint."
+          }
+        },
+        {
           "name": "Mark all as read",
           "event": [
             {

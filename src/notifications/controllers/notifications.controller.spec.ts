@@ -10,6 +10,7 @@ describe('NotificationsController', () => {
     findAll: jest.Mock;
     markAsRead: jest.Mock;
     markAllAsRead: jest.Mock;
+    countUnread: jest.Mock;
   };
 
   const authenticatedRequest = (id: string) =>
@@ -21,6 +22,7 @@ describe('NotificationsController', () => {
       findAll: jest.fn(),
       markAsRead: jest.fn(),
       markAllAsRead: jest.fn(),
+      countUnread: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -32,7 +34,12 @@ describe('NotificationsController', () => {
   });
 
   it('consome o evento delegando a persistência ao service', async () => {
-    const payload = { bookId: 'book-1', title: 'Dom Casmurro' };
+    const payload = {
+      bookId: 'book-1',
+      title: 'Dom Casmurro',
+      url: '/admin/books',
+      external: false,
+    };
 
     await controller.handleBookCreated(payload);
 
@@ -69,5 +76,14 @@ describe('NotificationsController', () => {
     await controller.markAllAsRead(authenticatedRequest('user-1'));
 
     expect(service.markAllAsRead).toHaveBeenCalledWith('user-1');
+  });
+
+  it('retorna a contagem de não lidas do usuário logado', async () => {
+    service.countUnread.mockResolvedValue({ count: 5 });
+
+    const result = await controller.countUnread(authenticatedRequest('user-1'));
+
+    expect(service.countUnread).toHaveBeenCalledWith('user-1');
+    expect(result).toEqual({ count: 5 });
   });
 });

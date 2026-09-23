@@ -68,6 +68,7 @@ A leitura exige o access token da API Java (`Authorization: Bearer`); o usuário
 | Método | Rota | Descrição |
 | --- | --- | --- |
 | `GET` | `/notifications` | Lista paginada, mais recentes primeiro, com `read`/`readAt` do usuário logado. Aceita `?page=` (padrão 1) e `?size=` (padrão 10, máximo 100) |
+| `GET` | `/notifications/unread-count` | Retorna `{ count }` com as não lidas (o sino usa este) |
 | `PATCH` | `/notifications/read-all` | Marca todas como lidas para o usuário logado |
 | `PATCH` | `/notifications/:id/read` | Marca uma como lida para o usuário logado |
 

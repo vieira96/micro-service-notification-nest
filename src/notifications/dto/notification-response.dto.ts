@@ -7,6 +7,9 @@ export class NotificationResponseDto {
   message!: string;
   data!: Prisma.JsonValue | null;
   channel!: string;
+  url!: string | null;
+  external!: boolean;
+  createdAt!: Date;
   read!: boolean;
   readAt!: Date | null;
 
@@ -18,6 +21,9 @@ export class NotificationResponseDto {
       message: string;
       data: Prisma.JsonValue | null;
       channel: string;
+      url: string | null;
+      external: boolean;
+      createdAt: Date;
     },
     read: boolean,
     readAt: Date | null,
@@ -29,6 +35,9 @@ export class NotificationResponseDto {
     dto.message = notification.message;
     dto.data = notification.data;
     dto.channel = notification.channel;
+    dto.url = notification.url;
+    dto.external = notification.external;
+    dto.createdAt = notification.createdAt;
     dto.read = read;
     dto.readAt = readAt;
     return dto;
