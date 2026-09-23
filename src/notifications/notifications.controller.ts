@@ -1,5 +1,6 @@
-import { Controller, Get, Logger, Param, Patch, Query } from '@nestjs/common';
+import { Controller, Get, Logger, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
+import { AuthenticatedRequest, JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BookCreatedPayload } from './book-created.payload';
 import { NotificationsService } from './notifications.service';
 
@@ -10,27 +11,26 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @EventPattern('book.created')
-  async handleBookCreated(
-    @Payload() payload: BookCreatedPayload,
-  ): Promise<void> {
-    this.logger.log(
-      `Evento book.created recebido: bookId=${payload.bookId} title="${payload.title}"`,
-    );
+  async handleBookCreated(@Payload() payload: BookCreatedPayload): Promise<void> {
+    this.logger.log(`Evento book.created recebido: bookId=${payload.bookId} title="${payload.title}"`);
     await this.notificationsService.createFromBookCreated(payload);
   }
 
   @Get()
-  findAll(@Query('userId') userId?: string) {
-    return this.notificationsService.findAll(userId);
+  @UseGuards(JwtAuthGuard)
+  findAll(@Req() request: AuthenticatedRequest) {
+    return this.notificationsService.findAll(request.user.id);
   }
 
   @Patch('read-all')
-  markAllAsRead(@Query('userId') userId?: string) {
-    return this.notificationsService.markAllAsRead(userId);
+  @UseGuards(JwtAuthGuard)
+  markAllAsRead(@Req() request: AuthenticatedRequest) {
+    return this.notificationsService.markAllAsRead(request.user.id);
   }
 
   @Patch(':id/read')
-  markAsRead(@Param('id') id: string) {
-    return this.notificationsService.markAsRead(id);
+  @UseGuards(JwtAuthGuard)
+  markAsRead(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
+    return this.notificationsService.markAsRead(id, request.user.id);
   }
 }

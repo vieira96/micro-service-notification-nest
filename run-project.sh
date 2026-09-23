@@ -13,6 +13,11 @@ if ! docker compose version >/dev/null 2>&1; then
     exit 1
 fi
 
+if ! docker network inspect library-messaging >/dev/null 2>&1; then
+    echo "Criando a rede Docker compartilhada library-messaging..."
+    docker network create library-messaging >/dev/null
+fi
+
 if ! command -v npm >/dev/null 2>&1; then
     echo "O npm não foi encontrado. Instale o Node.js 20+ antes de continuar."
     exit 1

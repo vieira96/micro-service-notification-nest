@@ -39,6 +39,10 @@ services:
       - ${ENV_FILE:-../.env}
     ports:
       - "${PORT:-8001}:${PORT:-8001}"
+    environment:
+      JWT_JWKS_URI: ${JWT_JWKS_URI:-http://libraryapi-api:8000/.well-known/jwks.json}
+      JWT_ISSUER: ${JWT_ISSUER:-library-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-library-services}
     networks:
       - default
       - messaging

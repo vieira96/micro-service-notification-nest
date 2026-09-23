@@ -1,0 +1,102 @@
+{
+  "info": {
+    "_postman_id": "987aa1be-4e04-48ae-a49c-8a93d3d5d3f1",
+    "name": "Notification API",
+    "description": "Collection do microserviço de notificações. Informe {{accessToken}} com o access token obtido no login da Library API. O usuário é identificado pelo sub do JWT; não existe userId na query string.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "notificationApiUrl",
+      "value": "http://localhost:8001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns a notification list', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "const first = pm.response.json()[0];",
+                  "if (first) pm.collectionVariables.set('notificationId', first.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{notificationApiUrl}}/notifications",
+            "description": "Lista notificações globais e as do usuário presente no sub do JWT."
+          }
+        },
+        {
+          "name": "Mark all as read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{notificationApiUrl}}/notifications/read-all",
+            "description": "Marca como lidas apenas as notificações acessíveis ao usuário do JWT."
+          }
+        },
+        {
+          "name": "Mark notification as read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{notificationApiUrl}}/notifications/{{notificationId}}/read",
+            "description": "Execute List notifications antes; ela preenche notificationId automaticamente quando houver resultado."
+          }
+        }
+      ]
+    }
+  ]
+}
