@@ -45,7 +45,10 @@ describe('NotificationsListener', () => {
       url: null,
       createdAt: new Date(),
     };
-    service.create.mockResolvedValue(created);
+    service.create.mockResolvedValue({
+      notification: created,
+      duplicate: false,
+    });
     preferences.enabledUserIds.mockResolvedValue(['user-1', 'user-2']);
 
     await listener.handleBookCreated(
@@ -62,6 +65,7 @@ describe('NotificationsListener', () => {
       message: 'O livro "Dom Casmurro" foi adicionado ao catálogo.',
       channels: ['IN_APP'],
       path: '/book/book-1',
+      eventKey: 'BOOK_CREATED:book-1',
     });
     expect(preferences.enabledUserIds).toHaveBeenCalledWith('APP_NOTIFICATION');
     expect(realtime.emitToUsers).toHaveBeenCalledWith(
@@ -71,6 +75,26 @@ describe('NotificationsListener', () => {
     );
     expect(channel.ack).toHaveBeenCalledWith(message);
     expect(channel.nack).not.toHaveBeenCalled();
+  });
+
+  it('confirma sem emitir quando é duplicado', async () => {
+    service.create.mockResolvedValue({
+      notification: { id: 'notif-1' },
+      duplicate: true,
+    });
+
+    await listener.handleBookCreated(
+      {
+        bookId: 'book-1',
+        title: 'Dom Casmurro',
+      },
+      context as never,
+    );
+
+    expect(channel.ack).toHaveBeenCalledWith(message);
+    expect(channel.nack).not.toHaveBeenCalled();
+    expect(preferences.enabledUserIds).not.toHaveBeenCalled();
+    expect(realtime.emitToUsers).not.toHaveBeenCalled();
   });
 
   it('rejeita sem requeue quando o processamento falha', async () => {

@@ -16,6 +16,7 @@ export interface CreateNotificationInput {
   channels: NotificationChannel[];
   path?: string | null;
   url?: string | null;
+  eventKey: string;
 }
 
 @Injectable()
@@ -25,11 +26,29 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(input: CreateNotificationInput) {
-    const notification = await this.prisma.notification.create({
-      data: { ...input },
-    });
-    this.logger.log(`Notificação persistida: id=${notification.id}`);
-    return notification;
+    try {
+      const notification = await this.prisma.notification.create({
+        data: { ...input },
+      });
+      this.logger.log(`Notificação persistida: id=${notification.id}`);
+      return { notification, duplicate: false };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        this.logger.log(
+          `Evento duplicado ignorado: eventKey=${input.eventKey}`,
+        );
+        const existing = await this.prisma.notification.findUnique({
+          where: { eventKey: input.eventKey },
+        });
+        if (existing) {
+          return { notification: existing, duplicate: true };
+        }
+      }
+      throw error;
+    }
   }
 
   async findAll(

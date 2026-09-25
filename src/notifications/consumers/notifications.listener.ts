@@ -33,21 +33,29 @@ export class NotificationsListener {
       this.logger.log(
         `Evento book.created recebido: bookId=${payload.bookId} title="${payload.title}"`,
       );
-      const created = await this.notificationsService.create({
-        type: 'BOOK_CREATED',
-        title: `Novo livro: ${payload.title}`,
-        message: `O livro "${payload.title}" foi adicionado ao catálogo.`,
-        channels: [NotificationChannel.IN_APP],
-        path: `/book/${payload.bookId}`,
-      });
-      const accepted = await this.preferencesService.enabledUserIds(
-        PreferenceType.APP_NOTIFICATION,
-      );
-      this.realtimeGateway.emitToUsers(
-        accepted,
-        'notification:new',
-        NotificationResponseDto.fromPrisma(created, false, null),
-      );
+      const { notification: created, duplicate } =
+        await this.notificationsService.create({
+          type: 'BOOK_CREATED',
+          title: `Novo livro: ${payload.title}`,
+          message: `O livro "${payload.title}" foi adicionado ao catálogo.`,
+          channels: [NotificationChannel.IN_APP],
+          path: `/book/${payload.bookId}`,
+          eventKey: `BOOK_CREATED:${payload.bookId}`,
+        });
+      if (!duplicate) {
+        const accepted = await this.preferencesService.enabledUserIds(
+          PreferenceType.APP_NOTIFICATION,
+        );
+        this.realtimeGateway.emitToUsers(
+          accepted,
+          'notification:new',
+          NotificationResponseDto.fromPrisma(created, false, null),
+        );
+      } else {
+        this.logger.log(
+          `Push ignorado (duplicado): bookId=${payload.bookId}`,
+        );
+      }
       channel.ack(message);
     } catch (error) {
       this.logger.error(

@@ -42,6 +42,7 @@ describe('NotificationsService (integration)', () => {
       data: { bookId: 'book-1' },
       channels: ['IN_APP'],
       path: '/book/book-1',
+      eventKey: 'BOOK_CREATED:book-1',
     });
 
     const before = await service.findAll('user-1', { page: 1, size: 10 });
@@ -49,7 +50,7 @@ describe('NotificationsService (integration)', () => {
     expect(before.content[0].read).toBe(false);
     expect(before.content[0].readAt).toBeNull();
 
-    await service.markAsRead(created.id, 'user-1');
+    await service.markAsRead(created.notification.id, 'user-1');
 
     const after = await service.findAll('user-1', { page: 1, size: 10 });
     expect(after.content[0].read).toBe(true);
@@ -64,6 +65,7 @@ describe('NotificationsService (integration)', () => {
       data: { bookId: 'book-2' },
       channels: ['IN_APP'],
       path: '/book/book-2',
+      eventKey: 'BOOK_CREATED:book-2',
     });
 
     const result = await service.markAllAsRead('user-2');
@@ -71,5 +73,34 @@ describe('NotificationsService (integration)', () => {
     expect(result.count).toBe(2);
     const page = await service.findAll('user-2', { page: 1, size: 10 });
     expect(page.content.every((item) => item.read)).toBe(true);
+  });
+
+  it('segunda entrega do mesmo evento não duplica', async () => {
+    const first = await service.create({
+      type: 'BOOK_CREATED',
+      title: 'Novo livro: Duplicado',
+      message: 'msg',
+      channels: ['IN_APP'],
+      path: '/book/book-3',
+      eventKey: 'BOOK_CREATED:book-3',
+    });
+    const second = await service.create({
+      type: 'BOOK_CREATED',
+      title: 'Novo livro: Duplicado',
+      message: 'msg',
+      channels: ['IN_APP'],
+      path: '/book/book-3',
+      eventKey: 'BOOK_CREATED:book-3',
+    });
+
+    expect(first.duplicate).toBe(false);
+    expect(second.duplicate).toBe(true);
+    expect(second.notification.id).toBe(first.notification.id);
+    const page = await service.findAll('user-3', { page: 1, size: 10 });
+    expect(
+      page.content.filter((item) =>
+        item.title.includes('Duplicado'),
+      ).length,
+    ).toBe(1);
   });
 });

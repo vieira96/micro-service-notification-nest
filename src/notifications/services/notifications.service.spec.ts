@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationChannel } from '@/generated/prisma/client';
+import { NotificationChannel, Prisma } from '@/generated/prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   CreateNotificationInput,
@@ -29,6 +29,7 @@ describe('NotificationsService', () => {
     data: { bookId: 'book-1' },
     channels: [NotificationChannel.IN_APP],
     path: '/book/book-1',
+    eventKey: 'BOOK_CREATED:book-1',
   };
 
   beforeEach(async () => {
@@ -65,7 +66,25 @@ describe('NotificationsService', () => {
       expect(prisma.notification.create).toHaveBeenCalledWith({
         data: { ...input },
       });
-      expect(result).toBe(created);
+      expect(result).toEqual({ notification: created, duplicate: false });
+    });
+
+    it('retorna a existente marcada como duplicada quando a chave já existe', async () => {
+      const existing = { id: 'notif-1', ...input };
+      prisma.notification.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+      prisma.notification.findUnique.mockResolvedValue(existing);
+
+      const result = await service.create({ ...input });
+
+      expect(prisma.notification.findUnique).toHaveBeenCalledWith({
+        where: { eventKey: 'BOOK_CREATED:book-1' },
+      });
+      expect(result).toEqual({ notification: existing, duplicate: true });
     });
   });
 

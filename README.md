@@ -114,6 +114,10 @@ Falhas de consumo não perdem mensagem em silêncio:
 
 Atenção: mudar os args da fila exige recriá-la uma vez (o Rabbit rejeita redeclaração divergente com `PRECONDITION_FAILED`). Com o Nest parado, apague a fila no painel — DLX/DLQ e dados do banco ficam intactos.
 
+## Idempotência
+
+O Rabbit entrega *at-least-once*: se o Nest persistir e cair antes do `ack`, a mensagem é reentregue. Para a 2ª entrega virar no-op, cada notificação tem `event_key` (`{TYPE}:{id de negócio}`, ex: `BOOK_CREATED:{bookId}`) com constraint `UNIQUE`. O `create()` captura o `P2002` e retorna `{ notification, duplicate }`; o listener só emite o push quando `duplicate: false` — duplicada nem cria linha nem notifica, só confirma (`ack`). Isso também torna o replay da DLQ seguro.
+
 ## Prisma
 
 O schema é multi-arquivo: `prisma/schema.prisma` tem só `generator` + `datasource`, e cada model ganha um `.prisma` em `prisma/models/`. O `prisma.config.ts` aponta para o diretório (apontar para o arquivo faria os models sumirem silenciosamente).
@@ -136,5 +140,4 @@ npx jest src/notifications src/preferences src/realtime src/rabbit  # unit + int
 
 ## Próximos passos
 
-1. Idempotência no consumo da fila.
-2. Replay da DLQ por endpoint (hoje é manual pelo painel).
+1. Replay da DLQ por endpoint (hoje é manual pelo painel).
