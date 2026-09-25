@@ -14,6 +14,14 @@ export class PreferencesService {
     });
   }
 
+  async enabledUserIds(type: PreferenceType): Promise<string[]> {
+    const rows = await this.prisma.notificationPreference.findMany({
+      where: { type, enabled: true },
+      select: { userId: true },
+    });
+    return rows.map((row) => row.userId);
+  }
+
   async get(
     userId: string,
     type: PreferenceType = PreferenceType.APP_NOTIFICATION,
