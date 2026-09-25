@@ -12,6 +12,9 @@ async function bootstrap() {
     origin: (process.env.FRONTEND_URL ?? 'http://localhost:4200').split(','),
   });
 
+  const notificationsQueue =
+    process.env.NOTIFICATIONS_QUEUE ?? 'notifications.book-created';
+
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
@@ -19,9 +22,15 @@ async function bootstrap() {
         process.env.RABBITMQ_URL ??
           'amqp://notifications:notifications@localhost:5672',
       ],
-      queue:
-        process.env.NOTIFICATIONS_QUEUE ?? 'notifications.book-created',
-      queueOptions: { durable: true },
+      queue: notificationsQueue,
+      noAck: false,
+      queueOptions: {
+        durable: true,
+        arguments: {
+          'x-dead-letter-exchange': `${notificationsQueue}.dlx`,
+          'x-dead-letter-routing-key': notificationsQueue,
+        },
+      },
     },
   });
 

@@ -9,11 +9,19 @@ describe('NotificationsListener', () => {
   let service: { create: jest.Mock };
   let preferences: { enabledUserIds: jest.Mock };
   let realtime: { emitToUsers: jest.Mock };
+  let channel: { ack: jest.Mock; nack: jest.Mock };
+  let context: { getChannelRef: jest.Mock; getMessage: jest.Mock };
+  const message = { fields: {}, content: Buffer.from('') };
 
   beforeEach(async () => {
     service = { create: jest.fn() };
     preferences = { enabledUserIds: jest.fn() };
     realtime = { emitToUsers: jest.fn() };
+    channel = { ack: jest.fn(), nack: jest.fn() };
+    context = {
+      getChannelRef: jest.fn().mockReturnValue(channel),
+      getMessage: jest.fn().mockReturnValue(message),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -27,7 +35,7 @@ describe('NotificationsListener', () => {
     listener = module.get<NotificationsListener>(NotificationsListener);
   });
 
-  it('persiste, busca quem aceitou e emite só para eles', async () => {
+  it('persiste, emite para quem aceitou e confirma a mensagem', async () => {
     const created = {
       id: 'notif-1',
       type: 'BOOK_CREATED',
@@ -40,10 +48,13 @@ describe('NotificationsListener', () => {
     service.create.mockResolvedValue(created);
     preferences.enabledUserIds.mockResolvedValue(['user-1', 'user-2']);
 
-    await listener.handleBookCreated({
-      bookId: 'book-1',
-      title: 'Dom Casmurro',
-    });
+    await listener.handleBookCreated(
+      {
+        bookId: 'book-1',
+        title: 'Dom Casmurro',
+      },
+      context as never,
+    );
 
     expect(service.create).toHaveBeenCalledWith({
       type: 'BOOK_CREATED',
@@ -58,5 +69,23 @@ describe('NotificationsListener', () => {
       'notification:new',
       expect.objectContaining({ id: 'notif-1', read: false, readAt: null }),
     );
+    expect(channel.ack).toHaveBeenCalledWith(message);
+    expect(channel.nack).not.toHaveBeenCalled();
+  });
+
+  it('rejeita sem requeue quando o processamento falha', async () => {
+    service.create.mockRejectedValue(new Error('banco fora do ar'));
+
+    await listener.handleBookCreated(
+      {
+        bookId: 'book-1',
+        title: 'Dom Casmurro',
+      },
+      context as never,
+    );
+
+    expect(channel.nack).toHaveBeenCalledWith(message, false, false);
+    expect(channel.ack).not.toHaveBeenCalled();
+    expect(realtime.emitToUsers).not.toHaveBeenCalled();
   });
 });
