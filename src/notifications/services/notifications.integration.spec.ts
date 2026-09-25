@@ -35,11 +35,13 @@ describe('NotificationsService (integration)', () => {
   });
 
   it('persiste, lista não lida e marca como lida', async () => {
-    const created = await service.createFromBookCreated({
-      bookId: 'book-1',
-      title: 'Dom Casmurro',
-      url: '/admin/books',
-      external: false,
+    const created = await service.create({
+      type: 'BOOK_CREATED',
+      title: 'Novo livro: Dom Casmurro',
+      message: 'O livro "Dom Casmurro" foi adicionado ao catálogo.',
+      data: { bookId: 'book-1' },
+      channels: ['IN_APP'],
+      path: '/book/book-1',
     });
 
     const before = await service.findAll('user-1', { page: 1, size: 10 });
@@ -55,11 +57,13 @@ describe('NotificationsService (integration)', () => {
   });
 
   it('markAllAsRead marca tudo de uma vez', async () => {
-    await service.createFromBookCreated({
-      bookId: 'book-2',
-      title: 'Memórias Póstumas',
-      url: null,
-      external: false,
+    await service.create({
+      type: 'BOOK_CREATED',
+      title: 'Novo livro: Memórias Póstumas',
+      message: 'O livro "Memórias Póstumas" foi adicionado ao catálogo.',
+      data: { bookId: 'book-2' },
+      channels: ['IN_APP'],
+      path: '/book/book-2',
     });
 
     const result = await service.markAllAsRead('user-2');

@@ -1,34 +1,19 @@
 import {
   Controller,
   Get,
-  Logger,
   Param,
   Patch,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
 import { AuthenticatedRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { PageQueryDto } from '@/common/dto/page-query.dto';
-import { BookCreatedPayload } from '@/notifications/dto/book-created.payload';
 import { NotificationsService } from '@/notifications/services/notifications.service';
 
 @Controller('notifications')
 export class NotificationsController {
-  private readonly logger = new Logger(NotificationsController.name);
-
   constructor(private readonly notificationsService: NotificationsService) {}
-
-  @EventPattern('book.created')
-  async handleBookCreated(
-    @Payload() payload: BookCreatedPayload,
-  ): Promise<void> {
-    this.logger.log(
-      `Evento book.created recebido: bookId=${payload.bookId} title="${payload.title}"`,
-    );
-    await this.notificationsService.createFromBookCreated(payload);
-  }
 
   @Get()
   @UseGuards(JwtAuthGuard)

@@ -1,14 +1,10 @@
-import type { Prisma } from '../../generated/prisma/client';
-
 export class NotificationResponseDto {
   id!: string;
   type!: string;
   title!: string;
   message!: string;
-  data!: Prisma.JsonValue | null;
-  channel!: string;
+  path!: string | null;
   url!: string | null;
-  external!: boolean;
   createdAt!: Date;
   read!: boolean;
   readAt!: Date | null;
@@ -19,10 +15,8 @@ export class NotificationResponseDto {
       type: string;
       title: string;
       message: string;
-      data: Prisma.JsonValue | null;
-      channel: string;
+      path: string | null;
       url: string | null;
-      external: boolean;
       createdAt: Date;
     },
     read: boolean,
@@ -33,10 +27,8 @@ export class NotificationResponseDto {
     dto.type = notification.type;
     dto.title = notification.title;
     dto.message = notification.message;
-    dto.data = notification.data;
-    dto.channel = notification.channel;
+    dto.path = notification.path;
     dto.url = notification.url;
-    dto.external = notification.external;
     dto.createdAt = notification.createdAt;
     dto.read = read;
     dto.readAt = readAt;

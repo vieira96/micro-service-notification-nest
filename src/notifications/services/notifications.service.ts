@@ -2,11 +2,21 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CountResponseDto } from '@/common/dto/count-response.dto';
 import { PageQueryDto } from '@/common/dto/page-query.dto';
 import { PageResponseDto } from '@/common/dto/page-response.dto';
+import { NotificationChannel, Prisma } from '@/generated/prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
-import { BookCreatedPayload } from '@/notifications/dto/book-created.payload';
 import { MarkAllReadResponseDto } from '@/notifications/dto/mark-all-read-response.dto';
 import { NotificationReadResponseDto } from '@/notifications/dto/notification-read-response.dto';
 import { NotificationResponseDto } from '@/notifications/dto/notification-response.dto';
+
+export interface CreateNotificationInput {
+  type: string;
+  title: string;
+  message: string;
+  data?: Prisma.InputJsonValue;
+  channels: NotificationChannel[];
+  path?: string | null;
+  url?: string | null;
+}
 
 @Injectable()
 export class NotificationsService {
@@ -14,17 +24,9 @@ export class NotificationsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async createFromBookCreated(payload: BookCreatedPayload) {
+  async create(input: CreateNotificationInput) {
     const notification = await this.prisma.notification.create({
-      data: {
-        type: 'BOOK_CREATED',
-        title: `Novo livro: ${payload.title}`,
-        message: `O livro "${payload.title}" foi adicionado ao catálogo.`,
-        data: { bookId: payload.bookId },
-        channel: 'IN_APP',
-        url: payload.url,
-        external: payload.external ?? false,
-      },
+      data: { ...input },
     });
     this.logger.log(`Notificação persistida: id=${notification.id}`);
     return notification;

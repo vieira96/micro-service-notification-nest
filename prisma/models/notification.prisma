@@ -15,10 +15,10 @@ model Notification {
   title     String              @db.VarChar(200)
   message   String              @db.Text
   data      Json?
-  channel   NotificationChannel @default(IN_APP)
-  // Destino opcional ao clicar. external=false navega no SPA; true abre nova aba.
+  channels  NotificationChannel[] @default([IN_APP])
+  // Destino opcional ao clicar. path=navegação interna (routerLink); url=redirect externo.
+  path      String?             @db.VarChar(500)
   url       String?             @db.VarChar(500)
-  external  Boolean             @default(false)
   createdAt DateTime            @default(now()) @map("created_at")
   updatedAt DateTime            @updatedAt @map("updated_at")
 

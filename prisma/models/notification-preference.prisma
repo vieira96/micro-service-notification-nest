@@ -1,10 +1,19 @@
-// Preferência de notificação por usuário (opt-in/opt-out).
+// Preferência de notificação por usuário e por tipo/canal (opt-in/opt-out).
 // Mora no microserviço — o Java não conhece nem decide quem recebe.
+// Hoje o front usa só APP_NOTIFICATION; MAIL/WHATSAPP ficam prontos no banco/API.
+
+enum PreferenceType {
+  APP_NOTIFICATION
+  MAIL_NOTIFICATION
+  WHATSAPP_NOTIFICATION
+}
 
 model NotificationPreference {
-  userId    String   @id @map("user_id")
-  enabled   Boolean  @default(true)
-  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String         @map("user_id")
+  type      PreferenceType @default(APP_NOTIFICATION)
+  enabled   Boolean        @default(true)
+  updatedAt DateTime       @updatedAt @map("updated_at")
 
+  @@id([userId, type])
   @@map("notification_preferences")
 }

@@ -13,8 +13,7 @@ describe('NotificationsController', () => {
     countUnread: jest.Mock;
   };
 
-  const authenticatedRequest = (id: string) =>
-    ({ user: { id } }) as never;
+  const authenticatedRequest = (id: string) => ({ user: { id } }) as never;
 
   beforeEach(async () => {
     service = {
@@ -33,27 +32,14 @@ describe('NotificationsController', () => {
     controller = module.get<NotificationsController>(NotificationsController);
   });
 
-  it('consome o evento delegando a persistência ao service', async () => {
-    const payload = {
-      bookId: 'book-1',
-      title: 'Dom Casmurro',
-      url: '/admin/books',
-      external: false,
-    };
-
-    await controller.handleBookCreated(payload);
-
-    expect(service.createFromBookCreated).toHaveBeenCalledWith(payload);
-  });
-
   it('lista com paginação do usuário logado', async () => {
     const page = PageResponseDto.from([], 0, 1, 10);
     service.findAll.mockResolvedValue(page);
 
-    const result = await controller.findAll(
-      authenticatedRequest('user-1'),
-      { page: 1, size: 10 },
-    );
+    const result = await controller.findAll(authenticatedRequest('user-1'), {
+      page: 1,
+      size: 10,
+    });
 
     expect(service.findAll).toHaveBeenCalledWith('user-1', {
       page: 1,

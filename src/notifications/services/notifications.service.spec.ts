@@ -1,7 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotificationChannel } from '@/generated/prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
-import { NotificationsService } from '@/notifications/services/notifications.service';
+import {
+  CreateNotificationInput,
+  NotificationsService,
+} from '@/notifications/services/notifications.service';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
@@ -18,11 +22,13 @@ describe('NotificationsService', () => {
     };
   };
 
-  const payload = {
-    bookId: 'book-1',
-    title: 'Dom Casmurro',
-    url: '/admin/books',
-    external: false,
+  const input: CreateNotificationInput = {
+    type: 'BOOK_CREATED',
+    title: 'Novo livro: Dom Casmurro',
+    message: 'O livro "Dom Casmurro" foi adicionado ao catálogo.',
+    data: { bookId: 'book-1' },
+    channels: [NotificationChannel.IN_APP],
+    path: '/book/book-1',
   };
 
   beforeEach(async () => {
@@ -49,23 +55,15 @@ describe('NotificationsService', () => {
     service = module.get<NotificationsService>(NotificationsService);
   });
 
-  describe('createFromBookCreated', () => {
-    it('persiste uma única notificação sem dono', async () => {
-      const created = { id: 'notif-1', ...payload };
+  describe('create', () => {
+    it('persiste uma única notificação sem dono com o payload recebido', async () => {
+      const created = { id: 'notif-1', ...input };
       prisma.notification.create.mockResolvedValue(created);
 
-      const result = await service.createFromBookCreated(payload);
+      const result = await service.create({ ...input });
 
       expect(prisma.notification.create).toHaveBeenCalledWith({
-        data: {
-          type: 'BOOK_CREATED',
-          title: 'Novo livro: Dom Casmurro',
-          message: 'O livro "Dom Casmurro" foi adicionado ao catálogo.',
-          data: { bookId: 'book-1' },
-          channel: 'IN_APP',
-          url: '/admin/books',
-          external: false,
-        },
+        data: { ...input },
       });
       expect(result).toBe(created);
     });
